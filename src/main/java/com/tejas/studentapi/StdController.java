@@ -12,7 +12,7 @@ public class StdController {
 
 	@GetMapping("/hello")
 	public String hellomsg() {
-		return "Hello Welcome Tejass to Learn Jenkins..." ; 
+		return "Hello Welcome Tejasss to Learn Jenkins..." ; 
 	}
 	
 	@GetMapping("/add/{a}/{b}")
