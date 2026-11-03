@@ -28,7 +28,7 @@ public class StdControllerTest {
     void testAddition() throws Exception {
         mockMvc.perform(get("/api/add/10/20"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Sum = 30"));
+                .andExpect(content().string("30"));
     }
 
     @Test
@@ -37,7 +37,7 @@ public class StdControllerTest {
                 .param("a", "10")
                 .param("b", "5"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Diff = 5"));
+                .andExpect(content().string("5"));
     }
 
     @Test
@@ -46,6 +46,6 @@ public class StdControllerTest {
                 .param("a", "10")
                 .param("b", "5"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Multi = 50"));
+                .andExpect(content().string("50"));
     }
 }

@@ -16,18 +16,18 @@ public class StdController {
 	}
 	
 	@GetMapping("/add/{a}/{b}")
-	public String sum(@PathVariable int a , @PathVariable int b) {
-		return "Sum = "+(a+b) ; 
+	public int sum(@PathVariable int a , @PathVariable int b) {
+		return a+b ; 
 	}
 	
 	@GetMapping("/diff")
-	public String difference(@RequestParam int a , @RequestParam int b) {
-		return "Diff = "+(a-b) ; 
+	public int difference(@RequestParam int a , @RequestParam int b) {
+		return a-b ; 
 	}
 	
 	@GetMapping("/mul")
-	public String multiply(@RequestParam int a , @RequestParam int b) {
-		return "Multi = "+(a-b) ; 
+	public int multiply(@RequestParam int a , @RequestParam int b) {
+		return a*b ; 
 	}
 	
 }
