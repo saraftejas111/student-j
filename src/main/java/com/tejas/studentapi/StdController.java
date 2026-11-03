@@ -25,4 +25,9 @@ public class StdController {
 		return "Diff = "+(a-b) ; 
 	}
 	
+	@GetMapping("/mul")
+	public String multiply(@RequestParam int a , @RequestParam int b) {
+		return "Multi = "+(a*b) ; 
+	}
+	
 }
