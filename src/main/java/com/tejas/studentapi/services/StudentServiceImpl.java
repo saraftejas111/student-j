@@ -1,90 +1,120 @@
+
 package com.tejas.studentapi.services;
 
 import java.util.List;
 
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.tejas.studentapi.entity.LocalStudent;
 import com.tejas.studentapi.entity.Student;
+import com.tejas.studentapi.localrepo.LocalStdRepository;
 import com.tejas.studentapi.repo.StdRepository;
 
 @Service
 public class StudentServiceImpl implements StdService {
 
     private final StdRepository studentRepository;
-
-    private final ObjectProvider<JdbcTemplate> localJdbcTemplateProvider;
+    private final LocalStdRepository localRepository;
 
     public StudentServiceImpl(
             StdRepository studentRepository,
-            @Qualifier("localJdbcTemplate")
-            ObjectProvider<JdbcTemplate> localJdbcTemplateProvider) {
+            LocalStdRepository localRepository) {
 
         this.studentRepository = studentRepository;
-        this.localJdbcTemplateProvider = localJdbcTemplateProvider;
+        this.localRepository = localRepository;
     }
 
+    // INSERT STUDENT IN BOTH DATABASES
     @Override
     public Student addStudent(Student student) {
 
-        // 1. Save student in AWS RDS
+        // Save in AWS RDS
         Student savedStudent = studentRepository.save(student);
 
-        // 2. Get local MySQL JdbcTemplate if available
-        JdbcTemplate localJdbcTemplate =
-                localJdbcTemplateProvider.getIfAvailable();
-
-        // 3. Save student in local MySQL
-        if (localJdbcTemplate != null) {
-
-            localJdbcTemplate.update(
-                "INSERT INTO students (name, email, course, fees) VALUES (?, ?, ?, ?)",
+        // Create LocalStudent with AWS generated ID
+        LocalStudent localStudent = new LocalStudent(
+                savedStudent.getId(),
                 savedStudent.getName(),
                 savedStudent.getEmail(),
                 savedStudent.getCourse(),
                 savedStudent.getFees()
-            );
-        }
+        );
+
+        // Save in Local MySQL
+        localRepository.save(localStudent);
 
         return savedStudent;
     }
 
+    // GET ALL STUDENTS FROM BOTH DATABASES
     @Override
     public List<Student> getAllStudents() {
-        return studentRepository.findAll();
+
+        List<Student> awsStudents = studentRepository.findAll();
+
+        List<LocalStudent> localStudents = localRepository.findAll();
+
+        return awsStudents;
     }
 
+    // GET STUDENT BY ID FROM BOTH DATABASES
     @Override
     public Student getStudentById(Integer id) {
-        return studentRepository.findById(id)
+
+        Student awsStudent = studentRepository.findById(id)
                 .orElseThrow(() ->
-                    new RuntimeException("Student not found with ID: " + id));
+                        new RuntimeException("Student not found in AWS: " + id));
+
+        localRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Student not found in Local MySQL: " + id));
+
+        return awsStudent;
     }
 
+    // UPDATE STUDENT IN BOTH DATABASES
     @Override
     public Student updateStudent(Integer id, Student student) {
 
-        Student existingStudent = studentRepository.findById(id)
+        Student awsStudent = studentRepository.findById(id)
                 .orElseThrow(() ->
-                    new RuntimeException("Student not found with ID: " + id));
+                        new RuntimeException("Student not found in AWS: " + id));
 
-        existingStudent.setName(student.getName());
-        existingStudent.setEmail(student.getEmail());
-        existingStudent.setCourse(student.getCourse());
-        existingStudent.setFees(student.getFees());
+        LocalStudent localStudent = localRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Student not found in Local MySQL: " + id));
 
-        return studentRepository.save(existingStudent);
+        // Update AWS entity
+        awsStudent.setName(student.getName());
+        awsStudent.setEmail(student.getEmail());
+        awsStudent.setCourse(student.getCourse());
+        awsStudent.setFees(student.getFees());
+
+        // Update Local entity
+        localStudent.setName(student.getName());
+        localStudent.setEmail(student.getEmail());
+        localStudent.setCourse(student.getCourse());
+        localStudent.setFees(student.getFees());
+
+        studentRepository.save(awsStudent);
+        localRepository.save(localStudent);
+
+        return awsStudent;
     }
 
+    // DELETE STUDENT FROM BOTH DATABASES
     @Override
     public void deleteStudent(Integer id) {
 
         if (!studentRepository.existsById(id)) {
-            throw new RuntimeException("Student not found with ID: " + id);
+            throw new RuntimeException("Student not found in AWS: " + id);
+        }
+
+        if (!localRepository.existsById(id)) {
+            throw new RuntimeException("Student not found in Local MySQL: " + id);
         }
 
         studentRepository.deleteById(id);
+        localRepository.deleteById(id);
     }
 }
